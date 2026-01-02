@@ -6,7 +6,7 @@ import time
 import logging
 from logging.handlers import SysLogHandler
 from projector_trigger.config import Config
-from projector_trigger.gpio_monitor import GPIOMonitor
+from projector_trigger.denon_monitor import DenonMonitor
 from projector_trigger.projector_control import ProjectorControl
 from projector_trigger.network_discovery import discover_projector_ip
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProjectorTriggerService:
-    """Main service that monitors GPIO and controls projector."""
+    """Main service that monitors Denon AVR power state and controls projector."""
     
     def __init__(self, config_path: str = None):
         """Initialize service.
@@ -23,7 +23,7 @@ class ProjectorTriggerService:
             config_path: Optional path to config file
         """
         self.config = Config(config_path)
-        self.gpio_monitor: GPIOMonitor = None
+        self.denon_monitor: DenonMonitor = None
         self.projector_control: ProjectorControl = None
         self.running = False
         self._setup_logging()
@@ -64,7 +64,7 @@ class ProjectorTriggerService:
             logger.debug(f"Could not set up syslog handler: {e}")
     
     def _setup_components(self):
-        """Initialize GPIO monitor and projector control."""
+        """Initialize Denon monitor and projector control."""
         try:
             # Discover projector IP if needed
             projector_ip = discover_projector_ip(
@@ -93,13 +93,22 @@ class ProjectorTriggerService:
             )
             logger.info(f"Projector control initialized: {projector_ip}:{self.config.projector_port}")
             
-            # Initialize GPIO monitor
-            self.gpio_monitor = GPIOMonitor(
-                pin=self.config.gpio_pin,
-                debounce_ms=self.config.debounce_ms,
-                callback=self._on_trigger_change
+            # Initialize Denon monitor
+            denon_ip = self.config.denon_ip
+            denon_mac = self.config.denon_mac
+            
+            if not denon_ip and not denon_mac:
+                raise RuntimeError("Denon AVR configuration required: provide 'denon.ip' or 'denon.mac' in config.yaml")
+            
+            self.denon_monitor = DenonMonitor(
+                ip=denon_ip,
+                mac=denon_mac,
+                port=self.config.denon_port,
+                poll_interval_off=self.config.denon_poll_interval_off,
+                poll_interval_on=self.config.denon_poll_interval_on,
+                callback=self._on_denon_state_change
             )
-            logger.info(f"GPIO monitor initialized: pin {self.config.gpio_pin}, debounce {self.config.debounce_ms}ms")
+            logger.info(f"Denon monitor initialized: polling intervals {self.config.denon_poll_interval_off}s (off) / {self.config.denon_poll_interval_on}s (on)")
             
         except Exception as e:
             logger.error(f"Failed to initialize components: {e}")
@@ -115,22 +124,28 @@ class ProjectorTriggerService:
         logger.info(f"Received signal {signum}, shutting down...")
         self.stop()
     
-    def _on_trigger_change(self, is_triggered: bool):
-        """Callback when GPIO trigger state changes.
+    def _on_denon_state_change(self, is_on: bool):
+        """Callback when Denon AVR power state changes.
         
         Args:
-            is_triggered: True if trigger is ON (GPIO LOW), False if OFF (GPIO HIGH)
+            is_on: True if Denon AVR is ON, False if OFF/STANDBY
         """
-        logger.info(f"Trigger state changed: {'ON' if is_triggered else 'OFF'}")
+        logger.info(f"Denon AVR state changed: {'ON' if is_on else 'OFF'}")
         
-        if is_triggered:
+        if is_on:
+            logger.info("Denon AVR powered on - turning projector ON")
             success = self.projector_control.power_on()
             if not success:
-                logger.error("Failed to send power on command")
+                logger.error("Failed to send projector power on command")
+            else:
+                logger.info("Projector power on command sent successfully")
         else:
+            logger.info("Denon AVR powered off - turning projector OFF")
             success = self.projector_control.power_off()
             if not success:
-                logger.error("Failed to send power off command")
+                logger.error("Failed to send projector power off command")
+            else:
+                logger.info("Projector power off command sent successfully")
     
     def start(self):
         """Start the service."""
@@ -142,7 +157,7 @@ class ProjectorTriggerService:
         self.running = True
         
         try:
-            self.gpio_monitor.start()
+            self.denon_monitor.start()
             
             # Main loop - just wait for events
             while self.running:
@@ -163,8 +178,8 @@ class ProjectorTriggerService:
         logger.info("Stopping projector trigger bridge service...")
         self.running = False
         
-        if self.gpio_monitor:
-            self.gpio_monitor.stop()
+        if self.denon_monitor:
+            self.denon_monitor.stop()
         
         logger.info("Service stopped")
 
