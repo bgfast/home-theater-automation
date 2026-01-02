@@ -1,0 +1,53 @@
+# Projector Trigger Bridge Configuration
+# Copy this file to config.yaml and fill in your values
+
+# GPIO settings
+gpio:
+  pin: 17                    # GPIO pin number (17 = physical pin 11)
+  debounce_ms: 300          # Debounce interval in milliseconds (250-500 recommended)
+
+# Projector network settings
+projector:
+  # Option 1: Specify MAC address for auto-discovery (recommended - works with DHCP)
+  # This enables automatic IP discovery even when network changes - perfect for new homeowners!
+  mac: "XX-XX-XX-XX-XX-XX"  # Projector MAC address - system will auto-discover IP
+  # Format: "F8-4E-17-B8-E0-9E" (use dashes or colons)
+  
+  # Option 2: Specify IP address directly (alternative to MAC)
+  # ip: "192.168.1.100"     # Uncomment and set if you prefer static IP
+  
+  port: 53595               # TCP port (Sony projectors typically use 53595)
+  power_on_command: 'power "on"'   # Command to turn projector on (ADCP format)
+  power_off_command: 'power "off"'  # Command to turn projector off (ADCP format)
+  timeout_seconds: 1.5      # TCP timeout per attempt
+  max_retries: 3            # Maximum retry attempts
+  retry_backoff_seconds: 0.5  # Base backoff delay (increases with each retry)
+
+# Denon AVR settings (for network-based monitoring - RECOMMENDED)
+denon:
+  # Option 1: Specify MAC address for auto-discovery (recommended - works with DHCP)
+  # This enables automatic IP discovery even when network changes
+  mac: "XX-XX-XX-XX-XX-XX"  # Denon AVR MAC address - system will auto-discover IP
+  # Format: "AA-BB-CC-DD-EE-FF" (use dashes or colons)
+  
+  # Option 2: Specify IP address directly (alternative to MAC)
+  # ip: "192.168.1.xxx"     # Uncomment and set if you prefer static IP
+  
+  port: 23                # Telnet port (default 23)
+  poll_interval_off: 5.0  # Polling interval when AVR is off (seconds)
+  poll_interval_on: 2.0   # Polling interval when AVR is on (seconds)
+
+# Projector HTTP web interface settings (for configuration access)
+# Note: Password is NOT stored here for security - use environment variable
+projector_http:
+  # Username for HTTP web interface (default: root)
+  username: "root"
+  # Port for HTTP web interface (default: 80)
+  port: 80
+  # Password: Set via PROJECTOR_PASSWORD environment variable
+  # Default factory password: "Projector" (must be changed on first login)
+
+# Logging
+logging:
+  level: "INFO"              # Logging level: DEBUG, INFO, WARNING, ERROR
+

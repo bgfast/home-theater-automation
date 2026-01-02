@@ -1,0 +1,23 @@
+[Unit]
+Description=Projector Trigger Bridge - Controls projector via IP based on Denon 12V trigger
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/projector-trigger
+ExecStart=/usr/bin/python3 -m projector_trigger.main --config /opt/projector-trigger/config.yaml
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=projector-trigger
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

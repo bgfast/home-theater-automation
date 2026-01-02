@@ -1,0 +1,54 @@
+# Configuration files with sensitive data
+config.yaml
+*.local.yaml
+*.secret.yaml
+
+# Proxy auth config (contains passwords)
+proxy_auth.local.py
+
+# OS and editor files
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Downloaded images
+downloads/*.img
+downloads/*.zip
+
+# Archives
+*.tar.gz
+*.zip
+
+# PDFs (if they contain sensitive info)
+print.pdf
+
+# Logs
+*.log
+logs/
+
+# SSH keys
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Environment files
+.env
+.env.local
+
