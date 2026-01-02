@@ -27,9 +27,12 @@
    cp .env.template .env
    ```
 
-2. **Edit `.env` with your password:**
+2. **Edit `.env` with your passwords:**
    ```bash
    PROJECTOR_PASSWORD=your_actual_password_here
+   RASPBERRY_PI_IP=192.168.50.110
+   RASPBERRY_PI_USER=admin
+   RASPBERRY_PI_PASSWORD=admin
    ```
 
 3. **Scripts automatically load `.env` file** from:
